@@ -8,10 +8,10 @@
 #include "ChannelMgr.h"
 #include "Chat.h"
 
-class PlyerLoginChat : public PlayerScript
+class PlayerLoginChat : public PlayerScript
 {
 public:
-    PlyerLoginChat() : PlayerScript("PlyerLoginChat") {}
+    PlayerLoginChat() : PlayerScript("PlayerLoginChat") {}
 
     void OnLogin(Player* player) override
     {
@@ -58,6 +58,6 @@ public:
 
 void AddLoginChatScripts()
 {
-    new PlyerLoginChat();
+    new PlayerLoginChat();
 }
 
