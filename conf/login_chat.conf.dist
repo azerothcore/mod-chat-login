@@ -6,6 +6,4 @@
 # to make it available in this table.
 #
 
-LoginChat.enabled=true
 LoginChat.name=world
-LoginChat.id=9

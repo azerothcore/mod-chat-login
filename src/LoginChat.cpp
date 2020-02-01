@@ -8,54 +8,56 @@
 #include "ChannelMgr.h"
 #include "Chat.h"
 
-class LoginChat : public PlayerScript{
-public:
-
-    LoginChat() : PlayerScript("LoginChat") { }
-
-    void OnLogin(Player* player) override {
-
-	std::string channelName = sConfigMgr->GetStringDefault("LoginChat.name", "world");
-        QueryResult result = CharacterDatabase.PQuery("SELECT channelId FROM channels WHERE name = '%s'", channelName.c_str());
-
-        if (!result) return;
-        uint32 channelId = (*result)[0].GetUInt32();
-
-    	if (ChannelMgr* cMgr = ChannelMgr::forTeam(player->GetTeamId()))
-    	{
-        	if (Channel* channel = cMgr->GetJoinChannel("world", 9))
-            		channel->JoinChannel(player, "");
-    		cMgr->LoadChannels();
-	}
-
-    }
-};
-
-class login_chat_conf : public WorldScript
+class PlayerLoginChat : public PlayerScript
 {
 public:
-    login_chat_conf() : WorldScript("login_chat_conf") { }
+    PlayerLoginChat() : PlayerScript("PlayerLoginChat") {}
 
-    void OnBeforeConfigLoad(bool reload) override
+    void OnLogin(Player* player) override
     {
-        if (!reload) {
-            std::string conf_path = _CONF_DIR;
-            std::string cfg_file = conf_path + "/login_chat.conf";
-#ifdef WIN32
-            cfg_file = "reward_shop.conf";
-#endif
-            std::string cfg_def_file = cfg_file + ".dist";
 
-            sConfigMgr->LoadMore(cfg_def_file.c_str());
+        ChannelMgr* cMgr = ChannelMgr::forTeam(player->GetTeamId());
+        if (!cMgr)
+            return;
 
-            sConfigMgr->LoadMore(cfg_file.c_str());
+        std::string channelName = sConfigMgr->GetStringDefault("LoginChat.name", "world");
+
+        if (channelName.empty())
+            return;
+
+        if (isdigit(channelName[0]))
+            return;
+
+        //                                                    0          1
+        QueryResult result = CharacterDatabase.PQuery("SELECT channelId, password FROM channels WHERE name = '%s'", channelName.c_str());
+
+        if (result)
+        {
+            do
+            {
+                Field* fields = result->Fetch();
+                uint32 channelDBId = fields[0].GetUInt32();
+                std::string password = fields[1].GetString();
+
+                if (channelDBId)
+                {
+                    ChatChannelsEntry const* chan = sChatChannelsStore.LookupEntry(channelDBId);
+                    if (!chan)
+                        return;
+                }
+
+                if (Channel* channel = cMgr->GetJoinChannel(channelName, channelDBId))
+                    channel->JoinChannel(player, password);
+    
+                cMgr->LoadChannels();
+            }
+            while (result->NextRow());
         }
     }
 };
 
-
-void AddLoginChatScripts() {
-    new LoginChat();
-    new login_chat_conf();
+void AddLoginChatScripts()
+{
+    new PlayerLoginChat();
 }
 
