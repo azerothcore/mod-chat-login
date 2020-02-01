@@ -21,8 +21,15 @@ public:
             return;
 
         std::string channelName = sConfigMgr->GetStringDefault("LoginChat.name", "world");
+
+        if (channelName.empty())
+            return;
+
+        if (isdigit(channelName[0]))
+            return;
+
         //                                                    0          1
-        QueryResult result = CharacterDatabase.PQuery("SELECT channelId FROM channels WHERE name = '%s'", channelName.c_str());
+        QueryResult result = CharacterDatabase.PQuery("SELECT channelId, password FROM channels WHERE name = '%s'", channelName.c_str());
 
         if (result)
         {
@@ -30,9 +37,17 @@ public:
             {
                 Field* fields = result->Fetch();
                 uint32 channelDBId = fields[0].GetUInt32();
+                std::string password = fields[1].GetString();
 
-                Channel* channel = cMgr->GetJoinChannel("world", channelDBId))
-                    channel->JoinChannel(this, "");
+                if (channelDBId)
+                {
+                    ChatChannelsEntry const* chan = sChatChannelsStore.LookupEntry(channelDBId);
+                    if (!chan)
+                        return;
+                }
+
+                if (Channel* channel = cMgr->GetJoinChannel(channelName, channelDBId))
+                    channel->JoinChannel(player, password);
     
                 cMgr->LoadChannels();
             }
