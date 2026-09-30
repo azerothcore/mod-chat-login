@@ -34,7 +34,7 @@ public:
     }
 };
 
-void AddLoginChatScripts() {
+void Addmod_chat_loginScripts() {
     new LoginChat();
 }
 
